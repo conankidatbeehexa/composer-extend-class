@@ -175,6 +175,10 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         $regex   = '/(^\s*?class\s*?)('.$oldClassName.')([^\{]*?\{)/m';
         $subst   = '${1}${2}_Old${3}';
         $content = preg_replace($regex, $subst, $content, 1);
+        
+        $regex   = '/(^\s*?abstract class\s*?)('.$oldClassName.')([^\{]*?\{)/m';
+        $subst   = '${1}${2}_Old${3}';
+        $content = preg_replace($regex, $subst, $content, 1);
 
         file_put_contents($path, $content);
     }
