@@ -123,25 +123,26 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         foreach ($packages as $package) {
             $extra = $package->getExtra();
             if (isset($extra['composer-extend-class']) && is_array($extra['composer-extend-class'])) {
-                foreach ($extra['composer-extend-class'] as $oldClass => $newClass) {
+                foreach ($extra['composer-extend-class'] as $oldClass => $newClassData) {
                     $classExtends[$oldClass] = $newClass;
                 }
             }
         }
 
-        foreach ($classExtends as $oldClass => $newClass) {
-            $oldPath   = realpath($loader->findFile($oldClass));
-            $newPath   = realpath($loader->findFile($newClass));
-            $rawName   = str_replace('.php', '', basename($newPath));
-            $newPath   = str_replace(basename($newPath), $rawName."_Old.php", $newPath);
-            $namespace = preg_replace('/'.$rawName.'$/', '', $oldClass);
-
+        foreach ($classExtends as $oldClass => $newClassData) {
+            $newClass = $newClassData["new_class"];
+            if($newClassData["create_old"]) {
+                $oldPath   = realpath($loader->findFile($oldClass));
+                $newPath   = realpath($loader->findFile($newClass));
+                $rawName   = str_replace('.php', '', basename($newPath));
+                $newPath   = str_replace(basename($newPath), $rawName."_Old.php", $newPath);
+                $namespace = preg_replace('/'.$rawName.'$/', '', $oldClass);
+                $autoloadConf = $composer->getPackage()->getAutoload();
+                $autoloadConf['exclude-from-classmap'][] = $newPath;
+                $autoloadConf['psr-4'][$namespace]       = dirname($newPath);
+                $composer->getPackage()->setAutoload($autoloadConf);
+            }
             $this->safeCopy($oldPath, $newPath);
-            $autoloadConf = $composer->getPackage()->getAutoload();
-            $autoloadConf['exclude-from-classmap'][] = $newPath;
-            $autoloadConf['psr-4'][$namespace]       = dirname($newPath);
-            $composer->getPackage()->setAutoload($autoloadConf);
-
             $this->adjustCopiedClass($newPath, $rawName);
         }
     }
